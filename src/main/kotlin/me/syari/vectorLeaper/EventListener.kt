@@ -2,6 +2,7 @@ package me.syari.vectorLeaper
 
 import org.bukkit.Location
 import org.bukkit.Material
+import org.bukkit.entity.Entity
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
 import org.bukkit.event.block.Action
@@ -19,6 +20,10 @@ object EventListener: Listener {
         if (e.item?.type != LEAP_ITEM_TYPE) return
         if (!e.player.isSneaking) return
         if (e.action != Action.RIGHT_CLICK_BLOCK) return
+        setTarget(e)
+    }
+
+    private fun setTarget(e: PlayerInteractEvent) {
         val clickedBlock = e.clickedBlock ?: return
         val location = clickedBlock.location
         val player = e.player
@@ -34,6 +39,10 @@ object EventListener: Listener {
         val uuid = player.uniqueId
         val targetLocation = targetLocationList[uuid] ?: return player.sendActionBar('&', "&c&l目標地点が登録されていません")
         val leapEntity = e.rightClicked
+        leap(leapEntity, targetLocation)
+    }
+
+    private fun leap(leapEntity: Entity, targetLocation: Location) {
         val leapEntityLocation = leapEntity.location
         val leapVector = targetLocation.toVector()
         leapVector.subtract(leapEntityLocation.toVector())
