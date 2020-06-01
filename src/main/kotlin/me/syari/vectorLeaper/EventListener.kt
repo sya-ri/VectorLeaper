@@ -18,7 +18,7 @@ object EventListener: Listener {
     @EventHandler
     fun on(e: PlayerInteractEvent){
         if(e.item?.type != LEAP_ITEM_TYPE) return
-        if(e.player.isSneaking) return
+        if(!e.player.isSneaking) return
         if (e.action != Action.RIGHT_CLICK_BLOCK) return
         val clickedBlock = e.clickedBlock ?: return
         val location = clickedBlock.location
@@ -31,7 +31,7 @@ object EventListener: Listener {
     @EventHandler
     fun on(e: PlayerInteractAtEntityEvent){
         val player = e.player
-        if(!player.isSneaking) return
+        if(player.isSneaking) return
         if(player.inventory.itemInMainHand.type != LEAP_ITEM_TYPE) return
         val uuid = player.uniqueId
         val targetLocation = targetLocationList[uuid] ?: return player.sendActionBar('&', "&c&l目標地点が登録されていません")
