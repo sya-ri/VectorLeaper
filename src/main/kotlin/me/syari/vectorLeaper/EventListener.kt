@@ -13,14 +13,30 @@ import java.util.UUID
 
 object EventListener: Listener {
     private val LEAP_ITEM_TYPE = Material.STICK
+    private val yVelocityList = mutableMapOf<UUID, Double>()
     private val targetLocationList = mutableMapOf<UUID, Location>()
 
     @EventHandler
     fun on(e: PlayerInteractEvent) {
         if (e.item?.type != LEAP_ITEM_TYPE) return
-        if (!e.player.isSneaking) return
-        if (e.action != Action.RIGHT_CLICK_BLOCK) return
-        setTarget(e)
+        val player = e.player
+        val isSneak = player.isSneaking
+        when (e.action) {
+            Action.RIGHT_CLICK_BLOCK -> {
+                if (isSneak) {
+                    setTarget(e)
+                }
+            }
+            Action.LEFT_CLICK_AIR -> {
+                val uuid = player.uniqueId
+                var yVelocity = yVelocityList.getOrDefault(uuid, 2.0)
+                val change = if (isSneak) -0.1 else 0.1
+                yVelocity += change
+                yVelocityList[uuid] = yVelocity
+                player.sendActionBar('&', "&0&lyVelocity: ${String.format("%.1f", yVelocity)}")
+            }
+            else -> return
+        }
     }
 
     private fun setTarget(e: PlayerInteractEvent) {
@@ -39,17 +55,18 @@ object EventListener: Listener {
         val uuid = player.uniqueId
         val targetLocation = targetLocationList[uuid] ?: return player.sendActionBar('&', "&c&l目標地点が登録されていません")
         val leapEntity = e.rightClicked
-        leap(leapEntity, targetLocation)
+        val yVelocity = yVelocityList.getOrDefault(uuid, 2.0)
+        leap(leapEntity, targetLocation, yVelocity)
     }
 
-    private fun leap(leapEntity: Entity, targetLocation: Location) {
+    private fun leap(leapEntity: Entity, targetLocation: Location, yVelocity: Double) {
         val leapEntityLocation = leapEntity.location
         val leapVector = targetLocation.toVector()
         leapVector.subtract(leapEntityLocation.toVector())
         leapVector.normalize()
         val distance = targetLocation.distance(leapEntityLocation)
-        leapVector.multiply(distance / 5.0)
-        leapVector.multiply(Vector(0.75, 1.5, 0.75))
+        leapVector.multiply(distance * 0.15)
+        leapVector.multiply(Vector(1.0, yVelocity, 1.0))
         leapEntity.velocity = leapVector
     }
 }
