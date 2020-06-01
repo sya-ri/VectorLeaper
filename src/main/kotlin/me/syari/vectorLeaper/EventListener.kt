@@ -1,5 +1,6 @@
 package me.syari.vectorLeaper
 
+import org.bukkit.Location
 import org.bukkit.Material
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
@@ -12,36 +13,20 @@ import java.util.UUID
 
 object EventListener: Listener {
     private val LEAP_ITEM_TYPE = Material.STICK
-    private val targetVectorList = mutableMapOf<UUID, Vector>()
-    private val targetScalarList = mutableMapOf<UUID, Double>()
+    private val targetLocationList = mutableMapOf<UUID, Location>()
 
     @EventHandler
     fun on(e: PlayerInteractEvent){
         if(e.item?.type != LEAP_ITEM_TYPE) return
         if(e.player.isSneaking) return
-        when(e.action){
-            Action.RIGHT_CLICK_BLOCK -> setTarget(e)
-            Action.LEFT_CLICK_AIR -> addScalar(e.player, -0.1)
-            Action.RIGHT_CLICK_AIR -> addScalar(e.player, 0.1)
-            else -> return
-        }
-    }
-
-    private fun setTarget(e: PlayerInteractEvent){
+        if (e.action != Action.RIGHT_CLICK_BLOCK) return
         val clickedBlock = e.clickedBlock ?: return
         val location = clickedBlock.location
-        val vector = location.toVector()
         val player = e.player
-        targetVectorList[player.uniqueId] = vector
+        targetLocationList[player.uniqueId] = location
         player.sendActionBar('&', "&0&l選択したブロック: ${location.blockX}, ${location.blockY}, ${location.blockZ}")
     }
 
-    private fun addScalar(player: Player, amount: Double){
-        val uuid = player.uniqueId
-        val scalar = targetScalarList.getOrDefault(uuid, 1.0) + amount
-        targetScalarList[uuid] = scalar
-        player.sendActionBar('&', "&0&lスカラー: ${String.format("%.1f", scalar)}")
-    }
 
     @EventHandler
     fun on(e: PlayerInteractAtEntityEvent){
@@ -49,13 +34,15 @@ object EventListener: Listener {
         if(!player.isSneaking) return
         if(player.inventory.itemInMainHand.type != LEAP_ITEM_TYPE) return
         val uuid = player.uniqueId
-        val targetVector = targetVectorList[uuid] ?: return player.sendActionBar('&', "&c&l目標地点が登録されていません")
+        val targetLocation = targetLocationList[uuid] ?: return player.sendActionBar('&', "&c&l目標地点が登録されていません")
         val leapEntity = e.rightClicked
-        val leapEntityVector = leapEntity.location.toVector()
-        targetVector.subtract(leapEntityVector)
-        targetVector.normalize()
-        val scalar = targetScalarList.getOrDefault(uuid, 1.0)
-        targetVector.multiply(scalar)
-        leapEntity.velocity = targetVector
+        val leapEntityLocation = leapEntity.location
+        val leapVector = targetLocation.toVector()
+        leapVector.subtract(leapEntityLocation.toVector())
+        leapVector.normalize()
+        val distance = targetLocation.distance(leapEntityLocation)
+        leapVector.multiply(distance / 5.0)
+        leapVector.multiply(Vector(0.75, 1.5, 0.75))
+        leapEntity.velocity = leapVector
     }
 }
