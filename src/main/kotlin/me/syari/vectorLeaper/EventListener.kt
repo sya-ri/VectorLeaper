@@ -18,6 +18,7 @@ object EventListener: Listener {
     @EventHandler
     fun on(e: PlayerInteractEvent){
         if(e.item?.type != LEAP_ITEM_TYPE) return
+        if(e.player.isSneaking) return
         when(e.action){
             Action.RIGHT_CLICK_BLOCK -> setTarget(e)
             Action.LEFT_CLICK_AIR -> addScalar(e.player, -0.1)
@@ -45,6 +46,7 @@ object EventListener: Listener {
     @EventHandler
     fun on(e: PlayerInteractAtEntityEvent){
         val player = e.player
+        if(!player.isSneaking) return
         if(player.inventory.itemInMainHand.type != LEAP_ITEM_TYPE) return
         val uuid = player.uniqueId
         val targetVector = targetVectorList[uuid] ?: return player.sendActionBar('&', "&c&l目標地点が登録されていません")
